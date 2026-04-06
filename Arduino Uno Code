@@ -1,0 +1,79 @@
+#include <SPI.h>
+#include "RF24.h"
+
+RF24 radio(8, 9);
+const uint64_t pipe = 0xE8E8F0F0E1LL;
+int data[2];
+
+const int ENA = 5;
+const int IN1 = 6;
+const int IN2 = 7;
+const int ENB = 3;
+const int IN3 = 4;
+const int IN4 = 2;
+
+const int SPEED = 180;
+
+void setup() {
+  Serial.begin(9600);
+  radio.begin();
+  radio.openReadingPipe(1, pipe);
+  radio.startListening();
+  pinMode(ENA, OUTPUT);
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  pinMode(ENB, OUTPUT);
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
+  stopMotors();
+}
+
+void loop() {
+  if (radio.available()) {
+    radio.read(data, sizeof(data));
+    int x = data[0];
+    int y = data[1];
+    Serial.print("X: "); Serial.print(x);
+    Serial.print(" | Y: "); Serial.println(y);
+    if      (x > 340)  forward();
+    else if (x < 320)  backward();
+    else if (y < 140)  turnLeft();
+    else if (y > 170)  turnRight();
+    else               stopMotors();
+  }
+}
+
+void forward() {
+  digitalWrite(IN1, HIGH); digitalWrite(IN2, LOW);
+  digitalWrite(IN3, HIGH); digitalWrite(IN4, LOW);
+  analogWrite(ENA, SPEED);
+  analogWrite(ENB, SPEED);
+}
+
+void backward() {
+  digitalWrite(IN1, LOW);  digitalWrite(IN2, HIGH);
+  digitalWrite(IN3, LOW);  digitalWrite(IN4, HIGH);
+  analogWrite(ENA, SPEED);
+  analogWrite(ENB, SPEED);
+}
+
+void turnLeft() {
+  digitalWrite(IN1, LOW);  digitalWrite(IN2, HIGH);
+  digitalWrite(IN3, HIGH); digitalWrite(IN4, LOW);
+  analogWrite(ENA, SPEED);
+  analogWrite(ENB, SPEED);
+}
+
+void turnRight() {
+  digitalWrite(IN1, HIGH); digitalWrite(IN2, LOW);
+  digitalWrite(IN3, LOW);  digitalWrite(IN4, HIGH);
+  analogWrite(ENA, SPEED);
+  analogWrite(ENB, SPEED);
+}
+
+void stopMotors() {
+  analogWrite(ENA, 0);
+  analogWrite(ENB, 0);
+  digitalWrite(IN1, LOW); digitalWrite(IN2, LOW);
+  digitalWrite(IN3, LOW); digitalWrite(IN4, LOW);
+}
